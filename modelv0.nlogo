@@ -8,6 +8,7 @@ globals [
   place
   exclusionPeche
   lakeCells
+  typha
   ;; global init variables
   r ; annual growth rate
   k ; carrying capacity in kg
@@ -28,6 +29,7 @@ patches-own[
  lake ; bol
  excluPeche ; bol
  excluPecheCells ; bol
+ typhaCells ; bol
  biomass ; kg
 ]
 
@@ -36,6 +38,7 @@ villages-own[
 ]
 
 boats-own[
+  next_task
  ;myVillage
   team ; bol
   ReleveFilet
@@ -43,6 +46,7 @@ boats-own[
   capture_totale
   capital
   capital_total
+
 ]
 
 extensions [gis]
@@ -62,11 +66,13 @@ to setup
   set lac gis:load-dataset "data/lac.shp"
   set place gis:load-dataset "data/villages.shp"
   set exclusionPeche gis:load-dataset "data/zoneExclusionPeche.shp"
+  set typha gis:load-dataset "data/tipha_theoric.shp"
   setup-world-envelope
 
   ask patches [
     set pcolor gray
     set lake FALSE
+    set typhaCells FALSE
     set excluPecheCells FALSE
   ]
 
@@ -80,12 +86,14 @@ to setup
   ask patches gis:intersecting lac [
     set pcolor blue
     set lake TRUE
+    set typhaCells FALSE
     set excluPecheCells FALSE
     set excluPeche FALSE
   ]
 
   ask patches gis:intersecting exclusionPeche [
       set lake TRUE
+      set typhaCells FALSE
       set excluPecheCells TRUE
       set excluPeche FALSE
   ]
@@ -93,6 +101,19 @@ to setup
   if ZonesExclusionPeche [
   ask patches with[excluPecheCells = TRUE][
       set pcolor green
+      set excluPeche TRUE
+  ]]
+
+  ask patches gis:intersecting typha [
+      set lake TRUE
+      set typhaCells TRUE
+      set excluPecheCells FALSE
+      set excluPeche FALSE
+  ]
+
+  if ZoneTypha [
+  ask patches with[typhaCells = TRUE][
+      set pcolor brown
       set excluPeche TRUE
   ]]
 
@@ -239,6 +260,9 @@ to go
     ]
     set capital_total_1 capital_total_1 + capital_total
     ]
+
+
+
 
 
     [
@@ -814,6 +838,17 @@ SortieSemaine
 1
 Jours
 HORIZONTAL
+
+SWITCH
+1283
+364
+1394
+397
+ZoneTypha
+ZoneTypha
+1
+1
+-1000
 
 @#$#@#$#@
 ## TODO
