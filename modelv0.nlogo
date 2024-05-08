@@ -8,6 +8,7 @@ globals [
   place
   exclusionPeche
   lakeCells
+  villageCells
   typha
   ;; global init variables
   r ; annual growth rate
@@ -27,6 +28,7 @@ globals [
 
 patches-own[
  lake ; bol
+ village_ ;bol
  excluPeche ; bol
  excluPecheCells ; bol
  typhaCells ; bol
@@ -38,8 +40,11 @@ villages-own[
 ]
 
 boats-own[
-  next_task
- ;myVillage
+  next-task
+  steps
+  myVillage
+  xcor_myVillage
+  ycor_myVillage
   team ; bol
   ReleveFilet
   capture
@@ -80,6 +85,7 @@ to setup
     sprout-villages 1 [
       set shape "circle"
       set color yellow
+      set village_ TRUE
     ]
   ]
 
@@ -141,6 +147,8 @@ to setup
     ]
   ]
 
+  set villageCells patches with[village_ = TRUE]
+
   let _nbBoatVillage ((nbBoats / count villages with[lakeVillage = TRUE]))
   ;show _nbBoatVillage ;; pour vérifier si l'arrondi tombe juste
 
@@ -154,6 +162,10 @@ to setup
         set shape "fisherboat"
         set team 1
         set heading InitHeading
+        set myVillage [who] of  min-one-of other villages [distance myself]
+        set xcor_myVillage [xcor] of  min-one-of other villages [distance myself]
+        set ycor_myVillage [ycor] of  min-one-of other villages [distance myself]
+        set next-task [ -> move]
       ]
       ;; Team = 2 : étrangers
       sprout-boats precision((_nbBoatVillage * (1 - (ProportionSenegalais / 100)))) 0 [
@@ -161,6 +173,7 @@ to setup
         set shape "fisherboat"
         set team 2
         set heading InitHeading
+        ;set next-task [ -> waiting]
       ]
     ]
 
@@ -216,53 +229,13 @@ to go
   ; hypothese que mbanais et maliens ne posent pas leurs filets aux mêmes endroits
   ; et ne pechent pas autant de poisson par jour
   ask boats [
-  ifelse team = 1
-    [
-      set ReleveFilet 0 ; 1 relève de filet correspond à une relève de filet sur 1 patch (donc 12 relèves de filet = 1 filet de 3 km)
-    set capture_totale 0 ; chaque jour capture initialement 0
-    set capital_total 0 - CoutMaintenance ; cout de sortie par jour
-    set capital_total_1 0
-    ;set capture 0
-    ;set capital 0
-
-    ; 1 tick = 1 journée
-
-    ; pour la mise en place d'une réserve intégrale
-    ; si reserve integrale = 4 mois, on peut pêcher 8 mois = 8 * 30 jours
-    ifelse ticks mod 360 < ((12 - ReserveIntegrale) * 30)[
-      move
-
-    ; pirogue sur un seul patch alors que peche sur 3km de filet donc on fait une boucle pour que la pirogue aille sur plusieurs patch en 1 journée
-    ; slider pour le nombre de patch sachant que 1 patch = 250 mètres = 0.25 km donc 12 patch = 3000 mètres = 3 km
-    ; tant que les pêcheurs n'ont pas pêcher 1 filet de 3km = tant que relève filet inférieur à 12,
-    ; ils continuent de pêcher
-     while [ReleveFilet < (LongueurFilet / 250)][
-      ;if ReleveFilet < (LongueurFilet / 250)[
-      fishingSenegalais
-      set capture_totale min (list (capture_totale + capture) QtéMaxPoissonPirogue)
-      ;if capture_totale < QtéMaxPoissonPirogue [
-      ;while [capture_totale < QtéMaxPoissonPirogue][
-
-      ;set capture_totale capture_totale + capture
-      ;set capital_total capital_total + capital
-      set capital_total capital_total + capture_totale * PrixPoisson
-      ;print capture_totale
-      ;print capital_total
-      ; 0.8 kg / biomass du patch pour avoir une capture en kg sur 250m (10 kg sur 3000 m donc 0.8 kg sur 250m)
-      set ReleveFilet ReleveFilet + 1
-      moveForward
-      ]
-
-    ][
-      set capture 0
-      set capture_totale capture_totale + capture
-      set capital_total capital_total + capital
+  ifelse team = 1 [
+      ifelse steps > 0
+      [ set steps steps - 1 ]
+      [ run next-task ]
+      set capital_total_1 capital_total_1 + capital_total
+      ;set next-task [ -> waiting]
     ]
-    set capital_total_1 capital_total_1 + capital_total
-    ]
-
-
-
 
 
     [
@@ -270,16 +243,13 @@ to go
     set capture_totale 0
     set capital_total 0 - CoutMaintenance
     set capital_total_2 0
-    ;set capture 0
-    ;set capital 0
-    ;set capital 0
 
     ; 1 tick = 1 journée
 
     ; pour la mise en place de la réserve intégrale
     ; si reserve integrale = 4 mois, peche autorisee pendant 8 mois = 8*30 jours
     ifelse ticks mod 360 < ((12 - ReserveIntegrale) * 30)[
-    move
+    move_malien
 
     ; pirogue sur un seul patch alors que peche sur 3km de filet donc on fait une boucle pour que la pirogue aille sur plusieurs patch en 1 journée
     ; slider pour le nombre de patch sachant que 1 patch = 250 mètres = 0.25 km donc 12 patch = 3000 mètres = 3 km
@@ -312,7 +282,37 @@ to go
   tick
 end
 
-to move
+to waiting
+  ifelse ticks mod 360 < ((12 - ReserveIntegrale) * 30)[
+    set steps 19
+    set next-task [ -> move]]
+  [
+    set capture 0
+    set capture_totale capture_totale + capture
+    set capital_total capital_total + capital]
+end
+
+to move ;; si communication envoie quelque part et si pecheur a l'argent : il se déplace
+  set ReleveFilet 0 ; 1 relève de filet correspond à une relève de filet sur 1 patch (donc 12 relèves de filet = 1 filet de 3 km)
+  set capture_totale 0 ; chaque jour capture initialement 0
+  set capital_total 0 - CoutMaintenance ; cout de sortie par jour
+  set capital_total_1 0
+
+  let patch_to_fish patch-at-heading-and-distance heading random 40
+
+   ifelse is_fishable? patch_to_fish = FALSE [
+    set heading random -180
+    let patch_ahead_turn patch-at-heading-and-distance heading 1
+    if is_fishable? patch_ahead_turn = TRUE[ forward 1]
+  ][
+    move-to patch_to_fish]
+
+  ;move-to one-of lakeCells with[excluPeche = FALSE]
+  set steps 0
+  set next-task [ -> fishingSenegalais]
+end
+
+to move_malien ;; si communication envoie quelque part et si pecheur a l'argent : il se déplace
   move-to one-of lakeCells with[excluPeche = FALSE]
 end
 
@@ -351,6 +351,7 @@ end
 
 
 to fishingSenegalais
+   while [ReleveFilet < (LongueurFilet / 250)][
   let _fishAvalableHere [biomass] of patch-here
 
   ; Proportion de poisson capturée par le filet sur le patch
@@ -360,24 +361,25 @@ to fishingSenegalais
     set biomass (_fishAvalableHere - PropCaptureSenegalais) ; biomass en kg ??????
   ]
 
-  set capture PropCaptureSenegalais
-  ;set capital (PrixPoisson * capture)
+    set capture PropCaptureSenegalais
+    set capture_totale min (list (capture_totale + capture) QtéMaxPoissonPirogue)
+    set capital_total capital_total + capture_totale * PrixPoisson
+    ; 0.8 kg / biomass du patch pour avoir une capture en kg sur 250m (10 kg sur 3000 m donc 0.8 kg sur 250m)
+    set ReleveFilet ReleveFilet + 1
+    moveForward
+  ]
 
-  ; captureSenegalais est en kg par filet donc on divisait par 12 pour l'avoir par patch
-  ;ifelse _fishAvalableHere > (captureSenegalais / 12 ) [
-    ;ask patch-here [
-      ;set biomass (_fishAvalableHere - (captureSenegalais / 12 )) ; 3000m/250m = 12
-  ;]
-  ;set capture (captureSenegalais / 12)
-  ;set capital (PrixPoisson * capture) - CoutMaintenance
-  ;]
-  ;[ ask patch-here [
-  ;  set biomass max list (_fishAvalableHere - (captureSenegalais / 12 )) 0
-  ;  ]
-  ;  set capture max list(_fishAvalableHere) 0
-  ;  set capital (PrixPoisson * capture) - CoutMaintenance
-  ;]
 
+  set steps 1
+  set next-task [ -> moveBackHome]
+
+
+end
+
+to moveBackHome
+  setxy xcor_myVillage ycor_myVillage
+  set steps 0
+  set next-task [ -> waiting]
 end
 
 to fishingEtrangers
@@ -608,7 +610,7 @@ PLOT
 1097
 190
 Capital moyen d'un pêcheur Sénégalais par jour
-Jour
+Heure
 Capital CFA
 0.0
 10.0
@@ -642,7 +644,7 @@ SWITCH
 353
 ZonesExclusionPeche
 ZonesExclusionPeche
-0
+1
 1
 -1000
 
@@ -715,7 +717,7 @@ ProportionSenegalais
 ProportionSenegalais
 0
 100
-12.0
+62.0
 1
 1
 %
@@ -833,7 +835,7 @@ SortieSemaine
 SortieSemaine
 0
 7
-3.0
+7.0
 1
 1
 Jours
@@ -1205,7 +1207,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.3.0
+NetLogo 6.4.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
