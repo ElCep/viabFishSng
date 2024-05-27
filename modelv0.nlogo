@@ -283,6 +283,10 @@ to go
 end
 
 to waiting
+  ;; turtle boat context
+  ;; Cette procedure permet de fait patienter les bateaux
+  ;; x = ticks mod 360 permet de compter en jour entre 0 et 360
+  ;; Si x < un nombre de jour de mis en réserve alors on mets step a 19 et la prochaine task est move
   ifelse ticks mod 360 < ((12 - ReserveIntegrale) * 30)[
     set steps 19
     set next-task [ -> move]]
