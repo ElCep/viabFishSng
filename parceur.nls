@@ -27,9 +27,7 @@ to parse-string
       if sublist-counter = 0 [
         ;; Trouver la position de la première ouverture de crochets et fermeture
         set nbPirogues_l sub_list
-        show nbPirogues_l
         set nbPirogues_l csv:from-row nbPirogues_l
-        show nbPirogues_l
       ] 
       if sublist-counter = 1 [
         set nbClosed_l sub_list
