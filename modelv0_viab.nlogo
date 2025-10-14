@@ -44,6 +44,9 @@ globals [
 
   MFETb
   MFETc
+
+  vt_capital ; array vecteur des valeurs de capital sur le temps de la simu
+  vt_biomass ; array vecteur de valeur de biomass
 ]
 
 patches-own[
@@ -77,6 +80,8 @@ to InitiVar
   set InitHeading random 360
   set MSTc_l []
   set MSTb_l []
+  set vt_capital []
+  set vt_biomass []
 
 end
 
@@ -327,9 +332,10 @@ to go
   caluclG
   if sumBiomass <= 0[stop]
   statSummary
+  vectorizeCap_biomass
 
 
-
+  show vt_capital
   tick
 end
 
@@ -507,6 +513,11 @@ to statSummary
     set meanMST mean[ASTc] of boats / ticks
     set medianMFET median[firstExitSatifaction] of boats
   ]
+end
+
+to vectorizeCap_biomass
+  set vt_capital lput capitalTotal vt_capital
+  set vt_biomass lput sumBiomass vt_biomass
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
