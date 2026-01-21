@@ -151,6 +151,7 @@ to setup
     move-to _nearestPatch ;; on déplace les villages près de l'eau
   ]
 
+
   parse-string ; Pour OM
   listUpdate   ; Pour OM
   set monthCounter 0
@@ -256,9 +257,10 @@ to go
 
     ; 1 tick = 1 journée
 
-    ; pour la mise en place d'une réserve intégrale
-    ; si reserve integrale = 4 mois, on peut pêcher 8 mois = 8 * 30 jours
-    ifelse ticks mod 360 < ((12 - ReserveIntegrale) * 30)[
+    ; pour la mise en place d'une réserve intégrale sur l'intégralité du lac
+    ; si reserve integrale = FALSE la saison de peche est ouverte
+    ; si la réserve intégrale = TRUE les bateaux n'ont plus le droit de sortir
+      ifelse ReserveIntegrale = TRUE[
       move
 
     ; pirogue sur un seul patch alors que peche sur 3km de filet donc on fait une boucle pour que la pirogue aille sur plusieurs patch en 1 journée
@@ -303,7 +305,7 @@ to go
 
     ; pour la mise en place de la réserve intégrale
     ; si reserve integrale = 4 mois, peche autorisee pendant 8 mois = 8*30 jours
-      ifelse ticks mod 360 < ((12 - ReserveIntegrale) * 30)[
+      ifelse ReserveIntegrale = TRUE[
         move
 
         ; pirogue sur un seul patch alors que peche sur 3km de filet donc on fait une boucle pour que la pirogue aille sur plusieurs patch en 1 journée
@@ -330,12 +332,14 @@ to go
   ]
 
   caluclG
-  if sumBiomass <= 0[stop]
+  ;if sumBiomass <= 0 [stop]
   statSummary
-  vectorizeCap_biomass
 
+  if monthCounter = 1 [
+    vectorizeCap_biomass
+    show vt_capital
+  ]
 
-  show vt_capital
   tick
 end
 
@@ -637,7 +641,7 @@ nbBoats
 nbBoats
 0
 500
-800.0
+200.0
 1
 1
 NIL
@@ -707,21 +711,6 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot capital_moyen_1"
 "pen-1" 1.0 0 -7500403 true "" "plot SatisfactionCapital"
 
-SLIDER
-1074
-339
-1247
-372
-ReserveIntegrale
-ReserveIntegrale
-0
-12
-3.0
-1
-1
-mois
-HORIZONTAL
-
 SWITCH
 1281
 320
@@ -729,7 +718,7 @@ SWITCH
 353
 ZonesExclusionPeche
 ZonesExclusionPeche
-1
+0
 1
 -1000
 
@@ -943,7 +932,7 @@ INPUTBOX
 1331
 604
 satifsactionCapitalG
-4.0E9
+1.0E9
 1
 0
 Number
@@ -1148,12 +1137,12 @@ diffB_i
 Number
 
 INPUTBOX
-145
-545
-495
-605
+140
+585
+810
+645
 om_input
-[[600,300,800], [0,6,3], [true,true,false]]
+[[200,300,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200], [true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true], [true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true]]
 1
 0
 String
@@ -1168,6 +1157,17 @@ ReserveIntegrale
 17
 1
 10
+
+SWITCH
+1090
+345
+1257
+378
+ReserveIntegrale
+ReserveIntegrale
+0
+1
+-1000
 
 @#$#@#$#@
 ## TODO
