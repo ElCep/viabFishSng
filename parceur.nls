@@ -49,17 +49,23 @@ to parse-string
 end
 
 to listUpdate
-  
-    ask boats [die]
-    set nbBoats first nbPirogues_l
-    set nbPirogues_l but-first nbPirogues_l
-    createBoat
+  ;; 1) met à jour la cible nbBoats depuis la liste OM
+  set nbBoats first nbPirogues_l
+  set nbPirogues_l but-first nbPirogues_l
 
+  ;; 2) ajuste la population sans reset les capitaux
+  update-boats-to-target nbBoats
 
+  ;; 3) autres paramètres mensuels
   set ReserveIntegrale first nbClosed_l
   set nbClosed_l but-first nbClosed_l
-  
+
   set ZonesExclusionPeche first reserve_l
   set reserve_l but-first reserve_l
-  
+end
+
+to update-boats-to-target [target]
+  let current count boats
+  if target > current [ createBoatsDelta (target - current) ]
+  if target < current [ removeBoatsDelta (current - target) ]
 end

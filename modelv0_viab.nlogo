@@ -163,39 +163,56 @@ to setup
 
 end
 
-to createBoat
-  ;; Nombre de pirogue par village
-  ;; Dans chaque village en bord de lac, il y a une même proportion de pêcheurs Sénégalais et étrangers
-  ;; Création des nouvelles tortues / pirogues sur les patch sélectionnés / là où se situent les villages de bord de lac
-  let _nbBoatVillage ((nbBoats / count villages with[lakeVillage = TRUE]))
-  ask villages with[lakeVillage = TRUE][
+to createBoatsDelta [nNew]
+  if nNew <= 0 [ stop ]
 
-    ;; Team = 1 : Sénégalais
-    if nbBoats > 0 [
-      ask patch-here[
-        sprout-boats precision(_nbBoatVillage * (ProportionSenegalais / 100)) 0  [
-          set color red
+  let villagesLake villages with [lakeVillage = TRUE]
+  if not any? villagesLake [ stop ]
+
+  repeat nNew [
+    ask one-of villagesLake [
+      ask patch-here [
+        sprout-boats 1 [
+          ;; team du nouveau
+          set team (ifelse-value (random-float 1 < (ProportionSenegalais / 100)) [1] [2])
+          set color ifelse-value (team = 1) [red] [green]
           set shape "fisherboat"
-          set team 1
           set heading InitHeading
-          set capital_total capital_totalI
+
+          ;; états "journaliers" -> toujours reset
+          set ReleveFilet 0
+          set capture 0
+          set capture_totale 0
+          set capital 0
+
+          ;; héritage : capital moyen de la team
+          set capital_total mean-capital-by-team team
+
+          ;; héritage : ASTc moyen de la team (donc AST de même taille)
+          set ASTc mean-astc-by-team team
+          set AST n-values ASTc [ ticks ]   ;; dummy pour que length AST = ASTc
+
+          ;; option cohérente (recommandée) : le nouveau n’a pas encore “exit satisfaction”
           set firstExitSatifaction 0
-          set AST []
-        ]
-        ;; Team = 2 : étrangers
-        sprout-boats precision((_nbBoatVillage * (1 - (ProportionSenegalais / 100)))) 0 [
-          set color green
-          set shape "fisherboat"
-          set team 2
-          set heading InitHeading
-          set capital_total capital_totalI
-          set firstExitSatifaction 0
-          set AST []
+
+          ;; --- si tu veux VRAIMENT hériter firstExit (moins cohérent), remplace la ligne au-dessus par :
+          ;; if any? boats with [team = [team] of myself and firstExitSatifaction > 0] [
+          ;;   set firstExitSatifaction round mean [firstExitSatifaction] of boats with [team = [team] of myself and firstExitSatifaction > 0]
+          ;; ] [
+          ;;   set firstExitSatifaction 0
+          ;; ]
         ]
       ]
     ]
   ]
 end
+
+
+to removeBoatsDelta [nRemove]
+  if nRemove <= 0 [ stop ]
+  ask min-n-of nRemove boats [capital_total] [die]
+end
+
 
 to setup-world-envelope
 gis:set-world-envelope (gis:envelope-of myEnvelope)
@@ -335,7 +352,6 @@ to go
   ]
 
   caluclG
-  ;if sumBiomass <= 0 [stop]
   statSummary
 
   if monthCounter = 1 [
@@ -357,7 +373,7 @@ to moveForward
   set heading heading + (random 45 - random 45 + 1)
 
   let patch_ahead patch-at-heading-and-distance heading 1
-  ;show is_fishable? patch_ahead
+
 
   ifelse is_fishable? patch_ahead = FALSE [
     set heading random -180
@@ -366,9 +382,6 @@ to moveForward
   ][
     forward 1]
 
-  ;show is_fishable? patch_ahead
-
-  ;pen-up
 end
 
 to-report is_fishable? [patch_ahead]
@@ -444,18 +457,14 @@ to diffuse_biomass ; patch procedure
   let _neighbourTerre count neighbors with[lake = FALSE]
 
   let _previousBiomassNeighboursLake sum [(1 / 8 * diffuseBiomass * biomass)] of neighbors with[lake = TRUE]
-  ;print _previousBiomassNeighboursLake
 
   set biomass (1 - diffuseBiomass) * _previousBiomass + (1 / 8 * _neighbourTerre * diffuseBiomass * biomass) + _previousBiomassNeighboursLake
-  ;print biomass
-  ;print kLakeCell
+
 end
 
 to grow-biomass  ; patch procedure
   if biomass > 0 [
     let _previousBiomass biomass
-    ;show word "premier terme" (r * _previousBiomass)
-    ; show word "sec terme" (1 - (_previousBiomass / k))
     set biomass _previousBiomass + (r * _previousBiomass * (1 - (_previousBiomass / kLakeCell))) ; effort pecheurs de l'equation de Rakya est inclu dans la previousBiomass
   ]
 end
@@ -502,11 +511,12 @@ to caluclG
 end
 
 to statSummary
+
   set sumBiomass sum [biomass] of lakeCells
   ;set sumtest sum [biomass] of patches with[lake = FALSE]
   if any? boats with [team = 1] [
     set capital_moyen_1 mean[capital_total] of boats with [team = 1]
-    show [capital_total] of boats
+
   ]
   ;print capital_moyen_1
   ;set capital_moyen_2 (capital_total_2 / count boats with [team = 2])
@@ -525,6 +535,22 @@ end
 to vectorizeCap_biomass
   set vt_capital lput capitalTotal vt_capital
   set vt_biomass lput sumBiomass vt_biomass
+end
+
+to-report mean-capital-by-team [t]
+  if any? boats with [team = t] [
+    report mean [capital_total] of boats with [team = t]
+  ]
+  if any? boats [ report mean [capital_total] of boats ]
+  report capital_totalI
+end
+
+to-report mean-astc-by-team [t]
+  if any? boats with [team = t] [
+    report round mean [ASTc] of boats with [team = t]
+  ]
+  if any? boats [ report round mean [ASTc] of boats ]
+  report 0
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -644,7 +670,7 @@ nbBoats
 nbBoats
 0
 500
-200.0
+300.0
 1
 1
 NIL
@@ -1134,7 +1160,7 @@ INPUTBOX
 810
 755
 om_input
-[[200,200,200,300,300,300,300,300,300,200,200,200,200,200,200,100,100,100,100,100,100,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200],[true,true,true,false,false,false,false,false,false,false,fasle,false,true,true,true,false,false,false,false,false,false,false,fasle,false,true,true,true,false,false,false,false,false,false,false,fasle,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true]]
+[[200,200,200,300,300,300,300,300,300,200,200,200,200,200,200,100,100,100,100,100,100,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200],[true,true,true,false,false,false,false,false,false,false,false,false,true,true,true,false,false,false,false,false,false,false,false,false,true,true,true,false,false,false,false,false,false,false,false,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true]]
 1
 0
 String
@@ -1157,7 +1183,7 @@ SWITCH
 378
 ReserveIntegrale
 ReserveIntegrale
-0
+1
 1
 -1000
 
