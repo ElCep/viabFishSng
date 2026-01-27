@@ -47,6 +47,8 @@ globals [
 
   vt_capital ; array vecteur des valeurs de capital sur le temps de la simu
   vt_biomass ; array vecteur de valeur de biomass
+
+  satifsactionCapitalG
 ]
 
 patches-own[
@@ -82,6 +84,7 @@ to InitiVar
   set MSTb_l []
   set vt_capital []
   set vt_biomass []
+  set satifsactionCapitalG 0
 
 end
 
@@ -260,7 +263,7 @@ to go
     ; pour la mise en place d'une réserve intégrale sur l'intégralité du lac
     ; si reserve integrale = FALSE la saison de peche est ouverte
     ; si la réserve intégrale = TRUE les bateaux n'ont plus le droit de sortir
-      ifelse ReserveIntegrale = TRUE[
+      ifelse ReserveIntegrale = FALSE[
       move
 
     ; pirogue sur un seul patch alors que peche sur 3km de filet donc on fait une boucle pour que la pirogue aille sur plusieurs patch en 1 journée
@@ -294,9 +297,9 @@ to go
     ] ;; fin du if team = 1
     [ ;; debut du if team = 2
       set ReleveFilet 0
-    set capture_totale 0
-    set capital_total capital_total - CoutMaintenance
-    set capital_total_2 0
+      set capture_totale 0
+      set capital_total capital_total - CoutMaintenance
+      set capital_total_2 0
     ;set capture 0
     ;set capital 0
     ;set capital 0
@@ -305,7 +308,7 @@ to go
 
     ; pour la mise en place de la réserve intégrale
     ; si reserve integrale = 4 mois, peche autorisee pendant 8 mois = 8*30 jours
-      ifelse ReserveIntegrale = TRUE[
+      ifelse ReserveIntegrale = FALSE[
         move
 
         ; pirogue sur un seul patch alors que peche sur 3km de filet donc on fait une boucle pour que la pirogue aille sur plusieurs patch en 1 journée
@@ -337,7 +340,6 @@ to go
 
   if monthCounter = 1 [
     vectorizeCap_biomass
-    show vt_capital
   ]
 
   tick
@@ -504,6 +506,7 @@ to statSummary
   ;set sumtest sum [biomass] of patches with[lake = FALSE]
   if any? boats with [team = 1] [
     set capital_moyen_1 mean[capital_total] of boats with [team = 1]
+    show [capital_total] of boats
   ]
   ;print capital_moyen_1
   ;set capital_moyen_2 (capital_total_2 / count boats with [team = 2])
@@ -916,23 +919,12 @@ Jours
 HORIZONTAL
 
 INPUTBOX
-371
-481
-494
-541
+1390
+535
+1513
+595
 SatisfactionCapital
-5000000.0
-1
-0
-Number
-
-INPUTBOX
-1170
-544
-1331
-604
-satifsactionCapitalG
-1.0E9
+15000.0
 1
 0
 Number
@@ -1067,9 +1059,9 @@ Seuil de satisfaction à l'échelle du système
 TEXTBOX
 832
 471
-1381
-493
----------------------------------------------------------------------------------------------------------------------------------------
+1592
+502
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 12
 0.0
 1
@@ -1077,9 +1069,9 @@ TEXTBOX
 TEXTBOX
 830
 630
-1372
+1575
 651
----------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 12
 0.0
 1
@@ -1095,10 +1087,10 @@ TEXTBOX
 1
 
 TEXTBOX
-1367
-506
-1382
-608
+1565
+500
+1580
+602
 |\n|\n|\n|\n|\n|
 12
 0.0
@@ -1140,9 +1132,9 @@ INPUTBOX
 140
 585
 810
-645
+755
 om_input
-[[200,300,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200], [true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true], [true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true,true,true,false,true,true]]
+[[200,200,200,300,300,300,300,300,300,200,200,200,200,200,200,100,100,100,100,100,100,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200],[true,true,true,false,false,false,false,false,false,false,fasle,false,true,true,true,false,false,false,false,false,false,false,fasle,false,true,true,true,false,false,false,false,false,false,false,fasle,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true]]
 1
 0
 String
@@ -1168,6 +1160,55 @@ ReserveIntegrale
 0
 1
 -1000
+
+PLOT
+1435
+50
+1635
+200
+MSTc
+NIL
+NIL
+0.0
+10.0
+0.0
+1.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot MSTc"
+
+MONITOR
+1180
+550
+1312
+595
+NIL
+satifsactionCapitalG
+17
+1
+11
+
+TEXTBOX
+1390
+500
+1540
+531
+Satsfaction Individuelle\nSur le capital par jour
+12
+0.0
+1
+
+TEXTBOX
+205
+590
+450
+616
+[[Boats (int)],[Saison de peche(bool)],[reserver (bool)]]
+9
+0.0
+1
 
 @#$#@#$#@
 ## TODO
