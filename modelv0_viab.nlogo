@@ -195,12 +195,7 @@ to createBoatsDelta [nNew]
           ;; option cohérente (recommandée) : le nouveau n’a pas encore “exit satisfaction”
           set firstExitSatifaction 0
 
-          ;; --- si tu veux VRAIMENT hériter firstExit (moins cohérent), remplace la ligne au-dessus par :
-          ;; if any? boats with [team = [team] of myself and firstExitSatifaction > 0] [
-          ;;   set firstExitSatifaction round mean [firstExitSatifaction] of boats with [team = [team] of myself and firstExitSatifaction > 0]
-          ;; ] [
-          ;;   set firstExitSatifaction 0
-          ;; ]
+
         ]
       ]
     ]
@@ -486,28 +481,36 @@ end
 to caluclG
   ;;MST et MFET a l'échelle de la simu
   ;; ces indicateurs sont compatible avec le papier de Mathias et al 2024
-  set satifsactionCapitalG SatisfactionCapital * nbBoats
 
-  if sumBiomass < satisfactionBiomassG AND MFETb = 0 [
+
+  if sumBiomass > satisfactionBiomassG AND MFETb = 0 [
     set MFETb ticks
   ]
-  if sumBiomass < satisfactionBiomassG AND ticks > 0 [
+  if sumBiomass > satisfactionBiomassG AND ticks > 0 [
     ;  MSTb
     set MSTb_l lput ticks MSTb_l
+
+  ]
+  if ticks > 0[
     set MSTb (length MSTb_l) / ticks
   ]
-
+  ;;====================
+  ;; pour le capital ...
+  ;; le capital est le capitale totale de tout les pêcheurs
+  set satifsactionCapitalG SatisfactionCapital * count boats
 
   if sum [capital_total] of boats > satifsactionCapitalG AND MFETc = 0 [
     set MFETc ticks
   ]
 
-  if sum [capital_total] of boats > satifsactionCapitalG  AND ticks > 0[
+  if sum [capital_total] of boats > satifsactionCapitalG   AND ticks > 0[
     ;  MSTc
     set MSTc_l lput ticks MSTc_l
+
+  ]
+  if ticks > 0[
     set MSTc (length MSTc_l) / ticks
   ]
-
 end
 
 to statSummary
@@ -539,10 +542,11 @@ end
 
 to-report mean-capital-by-team [t]
   if any? boats with [team = t] [
+    write "plop"
     report mean [capital_total] of boats with [team = t]
   ]
-  if any? boats [ report mean [capital_total] of boats ]
-  report capital_totalI
+  ;if any? boats [ report mean [capital_total] of boats ]
+  ;report capital_totalI
 end
 
 to-report mean-astc-by-team [t]
@@ -670,7 +674,7 @@ nbBoats
 nbBoats
 0
 500
-300.0
+728.7726441275387
 1
 1
 NIL
@@ -747,7 +751,7 @@ SWITCH
 353
 ZonesExclusionPeche
 ZonesExclusionPeche
-0
+1
 1
 -1000
 
@@ -994,7 +998,7 @@ INPUTBOX
 980
 256
 capital_totalI
-100000.0
+179377.23204441098
 1
 0
 Number
@@ -1005,7 +1009,7 @@ INPUTBOX
 1090
 257
 BiomassInit
-420000.0
+450000.0
 1
 0
 Number
@@ -1160,7 +1164,7 @@ INPUTBOX
 810
 755
 om_input
-[[200,200,200,300,300,300,300,300,300,200,200,200,200,200,200,100,100,100,100,100,100,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200],[true,true,true,false,false,false,false,false,false,false,false,false,true,true,true,false,false,false,false,false,false,false,false,false,true,true,true,false,false,false,false,false,false,false,false,false],[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true]]
+[[50.0,800.0,800.0,800.0,50.0,188.08350365310176,728.7726441275387,555.6615610284257,800.0,569.3659833248747,763.5919726679737,797.5314966220561,800.0,50.0,72.91987955711082,405.92174665656614,50.0,615.8003684996628,430.82137725360366,414.99007538853596,423.9818632402275,779.622538072354,50.0,800.0,800.0,50.0,693.375448182873,194.76402633658486,505.89774480193546,800.0,50.0,800.0,799.6395240694565,800.0,800.0,50.0,332.8426753393731,600.8478582616658,800.0,800.0,349.2202127359696,57.32887934793819,50.0,519.4409798884546,206.54498394794396,800.0,481.9257328534666,556.3819408627494,800.0,660.6259818813493],[false,false,false,false,false,false,false,true,false,true,false,false,false,false,false,true,false,false,false,true,true,false,true,false,false,true,true,true,false,false,false,false,true,false,true,true,true,false,true,false,true,true,false,true,true,true,false,false,false,true],[false,false,false,false,true,true,false,false,false,true,true,false,false,true,false,true,false,false,false,false,true,true,true,true,false,true,false,false,true,false,true,true,true,true,true,false,false,false,false,false,true,false,true,false,true,true,false,true,true,false]]
 1
 0
 String
