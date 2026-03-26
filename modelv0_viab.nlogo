@@ -276,7 +276,7 @@ to go
     ; pour la mise en place d'une réserve intégrale sur l'intégralité du lac
     ; si reserve integrale = FALSE la saison de peche est ouverte
     ; si la réserve intégrale = TRUE les bateaux n'ont plus le droit de sortir
-      ifelse ReserveIntegrale = FALSE[
+      if ReserveIntegrale = FALSE[
         if capital_total > 0 [
           move
 
@@ -293,7 +293,7 @@ to go
 
             ;set capture_totale capture_totale + capture
             ;set capital_total capital_total + capital
-            set capital_total capital_total + capture_totale * PrixPoisson
+            set capital_total capital_total + (capture * PrixPoisson)
             ;print capture_totale
             ;print capital_total
             ; 0.8 kg / biomass du patch pour avoir une capture en kg sur 250m (10 kg sur 3000 m donc 0.8 kg sur 250m)
@@ -301,12 +301,12 @@ to go
             moveForward
           ]
         ]
+      ]
+;    ][
+;      set capture 0
+;      set capture_totale capture_totale + capture
+;      set capital_total capital_total + capital
 
-    ][
-      set capture 0
-      set capture_totale capture_totale + capture
-      set capital_total capital_total + capital
-    ]
     calculSatisfaction
     set capital_total_1 capital_total_1 + capital_total
     ] ;; fin du if team = 1
@@ -323,7 +323,7 @@ to go
 
     ; pour la mise en place de la réserve intégrale
     ; si reserve integrale = 4 mois, peche autorisee pendant 8 mois = 8*30 jours
-      ifelse ReserveIntegrale = FALSE[
+      if ReserveIntegrale = FALSE[
         if capital_total > 0 [
           move
 
@@ -333,22 +333,23 @@ to go
           while [ReleveFilet < (LongueurFiletEtrangers / 250)][
             fishingEtrangers
             set capture_totale min (list (capture_totale + capture) QtéMaxPoissonPirogueEtrangers)
-            set capital_total capital_total + capture_totale * PrixPoisson
+            set capital_total capital_total + (capture * PrixPoisson)
             ;let _fishAvalableHere [biomass] of patch-here
             set ReleveFilet ReleveFilet + 1
             moveForward
             ;set capital capital + max list (PrixPoisson *  ((CaptureEtrangers / 12) * _fishAvalableHere) - CoutMaintenance) 0
           ]
         ]
-      ][
-        set capture 0
-        set capture_totale capture_totale + capture
-        set capital_total capital_total + capital
-      ]
-    set capital_total_2 capital_total_2 + capital_total
+;      ][
+;        set capture 0
+;        set capture_totale capture_totale + capture
+;        set capital_total capital_total + capital
+;      ]
+;    set capital_total_2 capital_total_2 + capital_total
     calculSatisfaction
     ]
 
+  ]
   ]
 
   caluclG
@@ -357,7 +358,7 @@ to go
   if monthCounter = 1 [
     vectorizeCap_biomass
   ]
-
+  plotIndiv
   tick
 end
 
@@ -561,6 +562,18 @@ to-report mean-astc-by-team [t]
   if any? boats [ report round mean [ASTc] of boats ]
   report 0
 end
+
+to plotIndiv
+  set-current-plot "capture"
+  ask boats [
+   plotxy ticks capture
+  ]
+
+  set-current-plot "vente"
+  ask boats [
+   plotxy ticks capital_total
+  ]
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 119
@@ -679,7 +692,7 @@ nbBoats
 nbBoats
 0
 500
-660.6259818813493
+57.32887934793819
 1
 1
 NIL
@@ -1276,11 +1289,11 @@ sumBiomass
 10
 
 PLOT
-20
-180
-220
-330
-plot 1
+1640
+50
+1840
+200
+log Capital et Bateau
 NIL
 NIL
 0.0
@@ -1293,6 +1306,42 @@ true
 PENS
 "log cap" 1.0 0 -16777216 true "" "if capital_moyen_1 > 0 [plot log capital_moyen_1 10]"
 "log boats" 1.0 0 -7500403 true "" "plot log count boats 10 "
+
+PLOT
+1585
+475
+1785
+625
+Capture
+ticks
+capture
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 2 -16777216 true "" ""
+
+PLOT
+1585
+310
+1785
+460
+vente
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 2 -16777216 true "" ""
 
 @#$#@#$#@
 ## TODO
