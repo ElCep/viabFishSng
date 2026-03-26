@@ -186,7 +186,8 @@ to createBoatsDelta [nNew]
           set capital 0
 
           ;; héritage : capital moyen de la team
-          set capital_total mean-capital-by-team team
+          ;; set capital_total mean-capital-by-team team
+          set capital_total SatisfactionCapital ;;; ici on crée les nouveau bateau avec juste l'agent suffisant pour être satisfait
 
           ;; héritage : ASTc moyen de la team (donc AST de même taille)
           set ASTc mean-astc-by-team team
@@ -276,28 +277,30 @@ to go
     ; si reserve integrale = FALSE la saison de peche est ouverte
     ; si la réserve intégrale = TRUE les bateaux n'ont plus le droit de sortir
       ifelse ReserveIntegrale = FALSE[
-      move
+        if capital_total > 0 [
+          move
 
-    ; pirogue sur un seul patch alors que peche sur 3km de filet donc on fait une boucle pour que la pirogue aille sur plusieurs patch en 1 journée
-    ; slider pour le nombre de patch sachant que 1 patch = 250 mètres = 0.25 km donc 12 patch = 3000 mètres = 3 km
-    ; tant que les pêcheurs n'ont pas pêcher 1 filet de 3km = tant que relève filet inférieur à 12,
-    ; ils continuent de pêcher
-     while [ReleveFilet < (LongueurFilet / 250)][
-      ;if ReleveFilet < (LongueurFilet / 250)[
-      fishingSenegalais
-      set capture_totale min (list (capture_totale + capture) QtéMaxPoissonPirogue)
-      ;if capture_totale < QtéMaxPoissonPirogue [
-      ;while [capture_totale < QtéMaxPoissonPirogue][
+          ; pirogue sur un seul patch alors que peche sur 3km de filet donc on fait une boucle pour que la pirogue aille sur plusieurs patch en 1 journée
+          ; slider pour le nombre de patch sachant que 1 patch = 250 mètres = 0.25 km donc 12 patch = 3000 mètres = 3 km
+          ; tant que les pêcheurs n'ont pas pêcher 1 filet de 3km = tant que relève filet inférieur à 12,
+          ; ils continuent de pêcher
+          while [ReleveFilet < (LongueurFilet / 250)][
+            ;if ReleveFilet < (LongueurFilet / 250)[
+            fishingSenegalais
+            set capture_totale min (list (capture_totale + capture) QtéMaxPoissonPirogue)
+            ;if capture_totale < QtéMaxPoissonPirogue [
+            ;while [capture_totale < QtéMaxPoissonPirogue][
 
-      ;set capture_totale capture_totale + capture
-      ;set capital_total capital_total + capital
-      set capital_total capital_total + capture_totale * PrixPoisson
-      ;print capture_totale
-      ;print capital_total
-      ; 0.8 kg / biomass du patch pour avoir une capture en kg sur 250m (10 kg sur 3000 m donc 0.8 kg sur 250m)
-      set ReleveFilet ReleveFilet + 1
-      moveForward
-      ]
+            ;set capture_totale capture_totale + capture
+            ;set capital_total capital_total + capital
+            set capital_total capital_total + capture_totale * PrixPoisson
+            ;print capture_totale
+            ;print capital_total
+            ; 0.8 kg / biomass du patch pour avoir une capture en kg sur 250m (10 kg sur 3000 m donc 0.8 kg sur 250m)
+            set ReleveFilet ReleveFilet + 1
+            moveForward
+          ]
+        ]
 
     ][
       set capture 0
@@ -321,19 +324,21 @@ to go
     ; pour la mise en place de la réserve intégrale
     ; si reserve integrale = 4 mois, peche autorisee pendant 8 mois = 8*30 jours
       ifelse ReserveIntegrale = FALSE[
-        move
+        if capital_total > 0 [
+          move
 
-        ; pirogue sur un seul patch alors que peche sur 3km de filet donc on fait une boucle pour que la pirogue aille sur plusieurs patch en 1 journée
-        ; slider pour le nombre de patch sachant que 1 patch = 250 mètres = 0.25 km donc 12 patch = 3000 mètres = 3 km
-        ; maliens pechent plus donc 1.5 * filet
-        while [ReleveFilet < (LongueurFiletEtrangers / 250)][
-          fishingEtrangers
-          set capture_totale min (list (capture_totale + capture) QtéMaxPoissonPirogueEtrangers)
-          set capital_total capital_total + capture_totale * PrixPoisson
-          ;let _fishAvalableHere [biomass] of patch-here
-          set ReleveFilet ReleveFilet + 1
-          moveForward
-          ;set capital capital + max list (PrixPoisson *  ((CaptureEtrangers / 12) * _fishAvalableHere) - CoutMaintenance) 0
+          ; pirogue sur un seul patch alors que peche sur 3km de filet donc on fait une boucle pour que la pirogue aille sur plusieurs patch en 1 journée
+          ; slider pour le nombre de patch sachant que 1 patch = 250 mètres = 0.25 km donc 12 patch = 3000 mètres = 3 km
+          ; maliens pechent plus donc 1.5 * filet
+          while [ReleveFilet < (LongueurFiletEtrangers / 250)][
+            fishingEtrangers
+            set capture_totale min (list (capture_totale + capture) QtéMaxPoissonPirogueEtrangers)
+            set capital_total capital_total + capture_totale * PrixPoisson
+            ;let _fishAvalableHere [biomass] of patch-here
+            set ReleveFilet ReleveFilet + 1
+            moveForward
+            ;set capital capital + max list (PrixPoisson *  ((CaptureEtrangers / 12) * _fishAvalableHere) - CoutMaintenance) 0
+          ]
         ]
       ][
         set capture 0
@@ -674,7 +679,7 @@ nbBoats
 nbBoats
 0
 500
-728.7726441275387
+660.6259818813493
 1
 1
 NIL
@@ -794,7 +799,7 @@ PropBiomassPecheSenegalais
 PropBiomassPecheSenegalais
 0
 100
-1.0
+3.0
 0.5
 1
 %
@@ -839,7 +844,7 @@ PropBiomassPecheEtrangers
 PropBiomassPecheEtrangers
 0
 100
-3.0
+5.0
 0.5
 1
 %
@@ -854,7 +859,7 @@ LongueurFiletEtrangers
 LongueurFiletEtrangers
 0
 10000
-3000.0
+2000.0
 250
 1
 Mètres
@@ -1187,7 +1192,7 @@ SWITCH
 378
 ReserveIntegrale
 ReserveIntegrale
-1
+0
 1
 -1000
 
@@ -1239,6 +1244,55 @@ TEXTBOX
 9
 0.0
 1
+
+PLOT
+1495
+230
+1695
+380
+capital total
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -4539718 true "" "plot satifsactionCapitalG"
+"pen-1" 1.0 0 -16777216 true "" "plot sum [capital_total] of boats"
+
+MONITOR
+540
+80
+622
+121
+NIL
+sumBiomass
+2
+1
+10
+
+PLOT
+20
+180
+220
+330
+plot 1
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"log cap" 1.0 0 -16777216 true "" "if capital_moyen_1 > 0 [plot log capital_moyen_1 10]"
+"log boats" 1.0 0 -7500403 true "" "plot log count boats 10 "
 
 @#$#@#$#@
 ## TODO
